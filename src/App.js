@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import StarRating from "./Star_rating";
 
 const tempMovieData = [
   {
@@ -50,17 +51,121 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
-function Search(){
-  const [query, setQuery] = useState("");
-    return <input
-    className="search"
-    type="text"
-    placeholder="Search movies..."
-    value={query}
-    onChange={(e) =>setQuery(e.target.value)}
-  />
-  }
+const KEY ="fe87fad2"
+export default function App() {
+    const [movies, setMovies] = useState([]);
+    const [watched, setWatched] = useState([]);
+    const[isloading,setIsloading]=useState(false)
+    const [query, setQuery] = useState("");
+    const [error,setError]=useState('')
+    const [selected,setSelected]=useState(null)
+    
 
+
+    
+    // useEffect(function(){
+    // console.log('sfter the initial render')
+    // })
+       
+    // useEffect(function(){
+    //   console.log('After every render')
+      
+    // })
+    // console.log('During the render')
+    function handleSelected(id){
+      setSelected(selecledId=>(id===selecledId?null:id));
+        
+    }
+    function handleClose(){
+      setSelected(null)
+    }
+
+
+    useEffect(function(){
+    async function fetchMovie_data(){
+     
+      try{setIsloading(true)
+        setError('')
+        const res=await fetch(`http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query} `)
+        
+
+        if(!res.ok)throw new Error("Somthing went worng ! data hasnot fetched")
+        
+        const data= await res.json();
+        if(data.Response==='False') throw new Error('Movie not found')
+         setMovies(data.Search);
+       
+     }
+      catch(err){
+        console.error(err.message)
+        setError(err.message)
+         
+      } finally{
+
+        setIsloading(false)
+        // 
+      }
+      }
+      if(query.length<3){
+        setMovies([])
+        setError('')
+      }
+
+      fetchMovie_data();
+    },[query])
+    
+    
+    
+    return (
+      <>
+      {/* Component composition by pasing element  */}
+      <Navbar query={query} onsetQuery={setQuery}element={<ResultsMassage movies={movies}/>} />
+       
+      <Main>
+        {/* Component composition by using children props */}
+        <Box>
+          {isloading && <Loader/>}
+          {!isloading&& !error&& <SinglelistForeach onhandleClose={handleClose} onhandleSlected={handleSelected} movies={movies}/>}
+          {error&&<ErrorMessage message={error}/>}
+
+         {/*
+         {isloading? <Loader/>:}
+          */}
+        </Box>
+        <Box>
+
+        {selected?<MovieDetails
+        onhandleClose={handleClose} 
+        selected={selected}
+        />:
+        <>  
+        <WatchedSummery  watched={watched}/>
+        <WatchMovieList watched={watched}/>
+         </>}
+       
+         
+        </Box>
+      </Main>
+      </>
+    );
+  }
+  function ErrorMessage({message}){
+return<p className="error"><span>⚠️</span>{message}</p>
+  }
+  function Search({query,onsetQuery}){
+  
+      return <input
+      className="search"
+      type="text"
+      placeholder="Search movies..."
+      value={query}
+      onChange={(e) =>onsetQuery(e.target.value)}
+    />
+    
+    }
+  function Loader(){
+    return<p className="loader">Loading...</p>
+  }
   function Logo(){
     return<div className="logo">
     <span role="img">🎬</span>
@@ -69,34 +174,36 @@ function Search(){
   }
 
 
-  function ResultsMassage({movies}){
+  function ResultsMassage({movies,queries}){
 
   return <p className="num-results">
-  Found <strong>{movies.length}</strong> results
+  Found <strong>{}</strong> results
 </p>
   }
 
-  function Navbar({children}){
+  function Navbar({element,query,onsetQuery}){
   return <nav className="nav-bar">
   {/* <Logo/>
   <Search />
   <ResultsMassage movies={movies}/>  */}
-   {children}
+    <Logo/>
+    <Search query={query} onsetQuery={onsetQuery}/>
+    {element}
   </nav>
   }
 
-  function SinglelistForeach({movies}){
+  function SinglelistForeach({movies,onhandleSlected}){
    
-    return<ul className="list">
+    return<ul className="list list-movies">
     {movies?.map((movie) => (
-      <Movie movie={movie} key={movie.imdbID}/>
+      <Movie movie={movie} onhandleSlected={onhandleSlected} key={movie.imdbID}/>
   
     ))}
   </ul>
   }
 
-  function Movie({movie}){
-    return<li >
+  function Movie({movie,onhandleSlected}){
+    return<li  onClick={()=>onhandleSlected(movie.imdbID)}>
     <img src={movie.Poster} alt={`${movie.Title} poster`} />
     <h3>{movie.Title}</h3>
     <div>
@@ -109,24 +216,26 @@ function Search(){
   }
 
 
-  function MovieLists({children}){
-    const [isOpen1, setIsOpen1] = useState(true);
+  function Box({children}){
+
+    const [isOpen, setIsOpen] = useState(true);
     
     
     return <div className="box">
-    {/* <button
+    <button
       className="btn-toggle"
-      onClick={() => setIsOpen1((open) => !open)}
+      onClick={() => setIsOpen((open) => !open)}
     >
-      {isOpen1 ? "–" : "+"}
-    </button> */}
-    <Button  onClick={() => setIsOpen1((open) => !open)}>{isOpen1 ? "–" : "+"}</Button>
-    {/* chil use of Component composition */}
-    {isOpen1 && (children
+      {isOpen ? "–" : "+"}
+    </button>
+    
+    {/* children used for Component composition */}
+    {isOpen && (children
     )}
   
   </div>
   }
+  
   function WatchedSummery({watched}){
     const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
     const avgUserRating = average(watched.map((movie) => movie.userRating));
@@ -154,6 +263,66 @@ function Search(){
     </div>
   </div>
   }
+
+
+function MovieDetails({selected,onhandleClose}){
+const[movie,setMovie]=useState({});
+const [isloading,setLoading]=useState(false)
+
+const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,BoxOffice:boxoffice,Country:country,
+  Director:director,
+  Plot:plot,Genre:genre,Language:language,imdbRating}=movie;
+  
+  console.log(title)
+  
+  useEffect(function(){
+
+    async function getmovieDetails(){
+       setLoading(true)
+       const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&i=${selected}`)
+       const data= await res.json()
+       setMovie(data)
+       setLoading(false)
+
+    }
+    getmovieDetails()
+  },[selected])
+
+  return<div className="details">
+    {isloading?<Loader/>:<>
+    <header>
+    <button className="btn-back" onClick={onhandleClose} >&larr;</button>
+    <img src={poster} alt={title} />
+   
+    <div className="details-overview">
+      <h2>{title}</h2>
+      <p>
+        {runtime}&bull
+      </p> 
+      <p>
+        {genre}
+      </p>
+      <p><span>⭐</span>{imdbRating} Imdb Rating</p>
+      
+    </div>
+    </header>
+    <section>
+      <StarRating maxrating={10} size="30"/>
+      <p>
+        <em>{plot}</em>
+      </p>
+      <p>Starring{actors}</p>
+      <p>Directed by {director}</p>
+    </section>
+    </>
+    }
+  </div>
+   
+
+}
+
+
+
 function WatchMovieList({watched}){
 return  <ul className="list">
 {watched.map((movie) => (
@@ -179,65 +348,15 @@ return  <ul className="list">
 </ul>
 }
 
-  function WatchedMovie(){
-    const [watched, setWatched] = useState(tempWatchedData);
-    const [isOpen2, setIsOpen2] = useState(true);
-    
-    return<div className="box">
-    {/* <button
-      className="btn-toggle"
-      onClick={() => setIsOpen2((open) => !open)}
-  
-      {isOpen2 ? "–" : "+"}
-    </button> */}
-
-    <Button onClick={() => setIsOpen2((open) => !open)}> {isOpen2 ? "–" : "+"}</Button>
-    
-    {isOpen2 && (
-      <>
-        <WatchedSummery watched={watched}/>
-        <WatchMovieList watched={watched}/>
-      
-      </>
-    )}
-  </div>
-  }
 
 
-function Main({movies,children}){
+
+function Main({children}){
  
   return<main className="main">       
-       
        {children}       
       </main>
 }
 
-export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  return (
-    <>
-    <Navbar movies={movies}>
-      <Logo/>
-      <Search />
-      <ResultsMassage movies={movies}/>
-    </Navbar>
-    <Main>
-      <MovieLists >
-        <SinglelistForeach movies={movies}/>
-      </MovieLists>
-      <WatchedMovie/>
-    </Main>
-    </>
-  );
-}
 
-function Button({children,onClick}){
-  return(
-    <button
-      className="btn-toggle"
-      // onClick={() =>((open) => !open)}
-    >
-     {children}
-    </button>
-  )
-}
+
