@@ -88,13 +88,15 @@ export default function App() {
       setWatched(watched=>watched.filter((movie)=>movie.imdbID !==id))
      }
 
-
     useEffect(function(){
+
+     const controller =new AbortController();
+
     async function fetchMovie_data(){
      
       try{setIsloading(true)
         setError('')
-        const res=await fetch(`http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query} `)
+        const res=await fetch(`http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query}`,{signal:controller.signal})
         
 
         if(!res.ok)throw new Error("Somthing went worng ! data hasnot fetched")
@@ -102,11 +104,12 @@ export default function App() {
         const data= await res.json();
         if(data.Response==='False') throw new Error('Movie not found')
          setMovies(data.Search);
-       
+        setError('')
      }
       catch(err){
         console.error(err.message)
-        setError(err.message)
+        if(err.message!=="AbortError")setError(err.message)
+       
          
       } finally{
 
@@ -118,8 +121,11 @@ export default function App() {
         setMovies([])
         setError('')
       }
-
-      fetchMovie_data();
+      handleClose();
+      fetchMovie_data(); 
+      return function (){
+        controller.abort();
+      }
     },[query])
     
     
@@ -312,7 +318,24 @@ const watchedMovieRating=watched.find(movie=>movie.imdbID===selected)?.userRatin
   }
   
   useEffect(function(){
+    function callback(e){
+      
+        if(e.code==='Escape'){
+          onhandleClose()
+        }
+      }
+    
+    document.addEventListener('keydown',callback
+    )
 
+    return function(){
+      document.removeEventListener('keydown',callback)
+    }
+   },[onhandleClose])
+
+
+  useEffect(function(){
+    
     async function getmovieDetails(){
        setLoading(true)
        const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&i=${selected}`)
