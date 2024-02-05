@@ -74,11 +74,19 @@ export default function App() {
     // console.log('During the render')
     function handleSelected(id){
       setSelected(selecledId=>(id===selecledId?null:id));
-        
+      
     }
     function handleClose(){
       setSelected(null)
     }
+
+    function handleAddWatched(movie){
+      setWatched(watched=>[...watched,movie])
+    }
+
+    function handledelete(id){
+      setWatched(watched=>watched.filter((movie)=>movie.imdbID !==id))
+     }
 
 
     useEffect(function(){
@@ -137,11 +145,14 @@ export default function App() {
         {selected?<MovieDetails
         onhandleClose={handleClose} 
         selected={selected}
+        onAddWatched={handleAddWatched}
+        watched={watched}
+
         />:
         <>  
         <WatchedSummery  watched={watched}/>
-        <WatchMovieList watched={watched}/>
-         </>}
+        <WatchMovieList selected={selected} onHandledelete={handledelete} watched={watched}/>
+        </>}
        
          
         </Box>
@@ -250,30 +261,55 @@ return<p className="error"><span>⚠️</span>{message}</p>
       </p>
       <p>
         <span>⭐️</span>
-        <span>{avgImdbRating}</span>
+        <span>{(avgImdbRating).toFixed(2)}</span>
       </p>
       <p>
         <span>🌟</span>
-        <span>{avgUserRating}</span>
+        <span>{(avgUserRating).toFixed(2)}</span>
       </p>
       <p>
         <span>⏳</span>
-        <span>{avgRuntime} min</span>
+        <span>{Math.round(avgRuntime)} min</span>
       </p>
     </div>
   </div>
   }
 
 
-function MovieDetails({selected,onhandleClose}){
+function MovieDetails({watched,selected,onhandleClose,onAddWatched}){
 const[movie,setMovie]=useState({});
-const [isloading,setLoading]=useState(false)
+const [isloading,setLoading]=useState(false) ;
+const [userRating,setUserRating]=useState('')
 
-const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,BoxOffice:boxoffice,Country:country,
+
+const isWatched=watched.map(movie=>(movie.imdbID)).includes(selected)
+
+const watchedMovieRating=watched.find(movie=>movie.imdbID===selected)?.userRating
+
+
+  const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,BoxOffice:boxoffice,Country:country,
   Director:director,
-  Plot:plot,Genre:genre,Language:language,imdbRating}=movie;
+  Plot:plot,Genre:genre,imdbRating}=movie;
   
-  console.log(title)
+ 
+  
+  function AddtoListHandler(movie){
+   
+    const newWatchedMovie={
+      imdbID:selected,
+      title,
+      year,
+      poster,
+      userRating,
+      imdbRating:Number(imdbRating),
+      runtime:Number(runtime.split(' ').at(0)),
+
+    }
+   
+      onAddWatched(newWatchedMovie)
+    onhandleClose()
+    
+  }
   
   useEffect(function(){
 
@@ -302,15 +338,26 @@ const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,BoxOffi
       <p>
         {genre}
       </p>
-      <p><span>⭐</span>{imdbRating} Imdb Rating</p>
+      <p><span>⭐</span>{imdbRating}Imdb Rating</p>
       
     </div>
     </header>
     <section>
-      <StarRating maxrating={10} size="30"/>
+     {! isWatched?<><StarRating maxrating={10} size="30" onSetUserRating={setUserRating}/>
+      {userRating>0 
+      && <>
+      <button className="btn-add" onClick={AddtoListHandler}>Add to WatchMovieList</button>
+      
+      </>
+      }
+      </>
+      
+    : <p>You rated with movie ⭐{watchedMovieRating}</p>
+    }
+      
       <p>
         <em>{plot}</em>
-      </p>
+      </p> 
       <p>Starring{actors}</p>
       <p>Directed by {director}</p>
     </section>
@@ -321,14 +368,14 @@ const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,BoxOffi
 
 }
 
+function WatchMovieList({watched,onHandledelete,selected}){
 
-
-function WatchMovieList({watched}){
+ 
 return  <ul className="list">
 {watched.map((movie) => (
   <li key={movie.imdbID}>
-    <img src={movie.Poster} alt={`${movie.Title} poster`} />
-    <h3>{movie.Title}</h3>
+    <img src={movie.poster} alt={`${movie.title} poster`} />
+    <h3>{movie.title}</h3>
     <div>
       <p>
         <span>⭐️</span>
@@ -343,13 +390,11 @@ return  <ul className="list">
         <span>{movie.runtime} min</span>
       </p>
     </div>
-  </li>
+    <button className="btn-delete" onClick={()=>onHandledelete(movie.imdbID)}>X</button>
+  </li> 
 ))}
 </ul>
 }
-
-
-
 
 function Main({children}){
  

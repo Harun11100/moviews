@@ -16,8 +16,8 @@ export default function StarRating(
             color='#fcc419',
             size='40',
             massage=[],
-            defaultRating=2,
-            onUserSetRating,
+            defaultRating=0,
+            onSetUserRating,
             }){
       
 
@@ -43,7 +43,7 @@ export default function StarRating(
     const [temRating,setTemRating]=useState(0)
     function ratetingHandler(rate){
             setRate(rate);
-            // onUserSetRating(rate);
+            onSetUserRating(rate);
    }
 
       return(<div style={containerStyle}>
