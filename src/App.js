@@ -287,7 +287,7 @@ const isWatched=watched.map(movie=>(movie.imdbID)).includes(selected)
 const watchedMovieRating=watched.find(movie=>movie.imdbID===selected)?.userRating
 
 
-  const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,BoxOffice:boxoffice,Country:country,
+  const {Title:title,Year:year,Poster:poster,Runtime:runtime,Actors:actors,
   Director:director,
   Plot:plot,Genre:genre,imdbRating}=movie;
   
@@ -321,8 +321,17 @@ const watchedMovieRating=watched.find(movie=>movie.imdbID===selected)?.userRatin
        setLoading(false)
 
     }
-    getmovieDetails()
+    getmovieDetails() 
   },[selected])
+
+  useEffect(function(){
+    if(!title)return
+      document.title=`Movie | ${title}`;
+
+      return function(){
+        document.title='moviews'
+      }
+  },[title])
 
   return<div className="details">
     {isloading?<Loader/>:<>
@@ -400,8 +409,5 @@ function Main({children}){
  
   return<main className="main">       
        {children}       
-      </main>
+       </main>
 }
-
-
-
