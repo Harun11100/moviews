@@ -54,13 +54,17 @@ const average = (arr) =>
 const KEY ="fe87fad2"
 export default function App() {
     const [movies, setMovies] = useState([]);
-    const [watched, setWatched] = useState([]);
+    // const [watched, setWatched] = useState([]);
+
     const[isloading,setIsloading]=useState(false)
     const [query, setQuery] = useState("");
     const [error,setError]=useState('')
     const [selected,setSelected]=useState(null)
     
-
+    const [watched, setWatched] = useState(function(){
+      const storedValue =localStorage.getItem('watched')
+      return JSON.parse(storedValue)
+    });
 
     
     // useEffect(function(){
@@ -82,11 +86,19 @@ export default function App() {
 
     function handleAddWatched(movie){
       setWatched(watched=>[...watched,movie])
+
+      localStorage.setItem('watched',JSON.stringify([...watched, movie]))
     }
 
     function handledelete(id){
       setWatched(watched=>watched.filter((movie)=>movie.imdbID !==id))
      }
+
+    useEffect(function (){
+      const el=localStorage.setItem('watched',JSON.stringify(watched))
+      console.log(el)
+    },[watched])
+
 
     useEffect(function(){
 
@@ -108,9 +120,7 @@ export default function App() {
      }
       catch(err){
         console.error(err.message)
-        if(err.message!=="AbortError")setError(err.message)
-       
-         
+        if(err.message!=="AbortError")setError(err.message)  
       } finally{
 
         setIsloading(false)
@@ -169,7 +179,14 @@ export default function App() {
   function ErrorMessage({message}){
 return<p className="error"><span>⚠️</span>{message}</p>
   }
+  
+  
   function Search({query,onsetQuery}){
+
+    useEffect(function(){
+      const element=document.querySelector('.search')
+      element.focus();
+    },[])
   
       return <input
       className="search"
